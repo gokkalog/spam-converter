@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>외국인 난독화 / 스팸체 변환기</title>
+  <style>
+    body {
+      background-color: #121216;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .spam-converter-box {
+      width: 100%;
+      max-width: 550px;
+      margin: 20px;
+      padding: 24px;
+      background: #1e1e24;
+      color: #f0f0f5;
+      border-radius: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      box-sizing: border-box;
+    }
+    .sc-title {
+      margin-top: 0;
+      margin-bottom: 18px;
+      font-size: 1.25rem;
+      color: #00ffcc;
+      text-align: center;
+    }
+    .spam-converter-box label {
+      display: block;
+      font-size: 0.85rem;
+      color: #a0a0b0;
+      margin-bottom: 6px;
+    }
+    #sc-input {
+      width: 100%;
+      height: 100px;
+      padding: 12px;
+      border: 1px solid #333340;
+      border-radius: 8px;
+      background-color: #2a2a35;
+      color: #fff;
+      font-size: 0.95rem;
+      resize: vertical;
+      box-sizing: border-box;
+      margin-bottom: 16px;
+    }
+    #sc-input:focus {
+      outline: none;
+      border-color: #00ffcc;
+    }
+    .sc-result {
+      min-height: 80px;
+      padding: 12px;
+      background: #121216;
+      border: 1px dashed #444455;
+      border-radius: 8px;
+      color: #00ffcc;
+      font-size: 1rem;
+      line-height: 1.6;
+      word-break: break-all;
+      white-space: pre-wrap;
+      margin-bottom: 14px;
+    }
+    #sc-copy-btn {
+      width: 100%;
+      padding: 12px;
+      background: #00ffcc;
+      color: #121216;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #sc-copy-btn:hover {
+      background: #00e6b8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="spam-converter-box">
+  <h3 class="sc-title">⚡ 외국인 난독화 / 스팸체 변환기</h3>
+  
+  <label for="sc-input">원래 문장 입력</label>
+  <textarea id="sc-input" placeholder="여기에 변환할 문장을 입력하세요..."></textarea>
+
+  <label>변환 결과</label>
+  <div id="sc-output" class="sc-result">변환 결과가 여기에 실시간으로 표시됩니다.</div>
+  
+  <button id="sc-copy-btn" type="button">📋 결과 복사하기</button>
+</div>
+
+<script>
+(function() {
+  const input = document.getElementById('sc-input');
+  const output = document.getElementById('sc-output');
+  const copyBtn = document.getElementById('sc-copy-btn');
+
+  const doubleConsonantMap = {
+    0: 1, 3: 4, 7: 8, 9: 10, 12: 13
+  };
+  const extraJongList = [3, 8, 11, 15, 27];
+
+  function toSpamText(text) {
+    if (!text) return '변환 결과가 여기에 실시간으로 표시됩니다.';
+    
+    let result = text
+      .replace(/입니다/g, '입니댵')
+      .replace(/습니다/g, '슩니다')
+      .replace(/요/g, '욧');
+
+    return result.split('').map(char => {
+      const code = char.charCodeAt(0);
+      if (code >= 0xAC00 && code <= 0xD7A3) {
+        const charOffset = code - 0xAC00;
+        let jong = charOffset % 28;
+        let jung = Math.floor((charOffset / 28) % 21);
+        let cho = Math.floor(charOffset / (28 * 21));
+
+        if (doubleConsonantMap[cho] !== undefined && Math.random() < 0.6) {
+          cho = doubleConsonantMap[cho];
+        }
+        if (jong === 0 && Math.random() < 0.8) {
+          jong = extraJongList[Math.floor(Math.random() * extraJongList.length)];
+        }
+
+        const newCode = 0xAC00 + (cho * 21 * 28) + (jung * 28) + jong;
+        return String.fromCharCode(newCode);
+      }
+      return char;
+    }).join('');
+  }
+
+  input.addEventListener('input', () => {
+    output.innerText = toSpamText(input.value);
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const textToCopy = output.innerText;
+    if (!input.value) return;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      const originalText = copyBtn.innerText;
+      copyBtn.innerText = '✅ 복사 완료!';
+      setTimeout(() => copyBtn.innerText = originalText, 1500);
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
